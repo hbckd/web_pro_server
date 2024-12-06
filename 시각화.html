@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>노년층 공공인프라 및 시설 분포 시각화</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+
+    h1 {
+      text-align: center;
+      padding: 20px;
+      background-color: #4CAF50;
+      color: white;
+      margin: 0;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      padding: 20px;
+    }
+
+    .left-panel {
+      width: 55%; /* 기존 45%에서 55%로 증가 */
+      background-color: white;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin: 10px;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    .right-panel {
+      width: 35%; /* 기존 45%에서 35%로 감소 */
+      background-color: white;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin: 10px;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    .map-container {
+      margin: 0 auto;
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+    }
+
+    .region {
+      fill: #CCCCCC;
+      stroke: #FFFFFF;
+      stroke-width: 1;
+      transition: fill 0.3s ease;
+    }
+
+    .region:hover {
+      fill: #888888;
+      cursor: pointer;
+    }
+
+    .legend {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .legend span {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      margin-right: 5px;
+    }
+
+    .dropdown {
+      margin: 10px 0;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .tooltip {
+      position: absolute;
+      background-color: #FFFFFF;
+      padding: 5px 10px;
+      border: 1px solid #CCCCCC;
+      border-radius: 5px;
+      font-size: 12px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      visibility: hidden;
+      pointer-events: none;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <h1>노년층 공공인프라 및 시설 분포 시각화</h1>
+
+  <div class="container">
+    <!-- 왼쪽 패널: 노년층 공공인프라 시각화 -->
+    <div class="left-panel">
+      <h2>노년층 공공인프라</h2>
+      <div class="dropdown">
+        <label for="region-select">지역 선택:</label>
+        <select id="region-select">
+          <option value="seoul">서울특별시</option>
+          <option value="busan">부산광역시</option>
+          <option value="daegu">대구광역시</option>
+          <option value="incheon">인천광역시</option>
+        </select>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>기관유형</th>
+            <th>기관명</th>
+            <th>시도명</th>
+            <th>시군구명</th>
+            <th>읍면동</th>
+            <th>도로명주소</th>
+            <th>전화번호</th>
+          </tr>
+        </thead>
+        <tbody id="infrastructure-table">
+          <tr>
+            <td>복지시설</td>
+            <td>서울재가복지센터</td>
+            <td>서울특별시</td>
+            <td>종로구</td>
+            <td>청운효자동</td>
+            <td>서울 종로구 효자동길 10</td>
+            <td>02-1234-5678</td>
+          </tr>
+          <tr>
+            <td>의료시설</td>
+            <td>서울의료원</td>
+            <td>서울특별시</td>
+            <td>중랑구</td>
+            <td>상봉동</td>
+            <td>서울 중랑구 망우로 201</td>
+            <td>02-9876-5432</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 오른쪽 패널: 시설 분포 시각화 -->
+    <div class="right-panel">
+      <h2>시설 분포 시각화</h2>
+      <div class="dropdown">
+        <label for="level-selector">분석 단위 선택:</label>
+        <select id="level-selector">
+          <option value="sido">시도별</option>
+          <option value="sigungu">시군구별</option>
+          <option value="eupmyeondong">읍면동별</option>
+        </select>
+      </div>
+      <div class="map-container">
+        <svg id="korea-map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+          <path id="seoul" class="region" data-name="서울특별시" d="M100,200 L150,200 L150,250 L100,250 Z"></path>
+          <path id="busan" class="region" data-name="부산광역시" d="M300,400 L350,400 L350,450 L300,450 Z"></path>
+          <path id="daegu" class="region" data-name="대구광역시" d="M400,300 L450,300 L450,350 L400,350 Z"></path>
+          <path id="incheon" class="region" data-name="인천광역시" d="M50,150 L100,150 L100,200 L50,200 Z"></path>
+        </svg>
+      </div>
+      <div class="legend">
+        <strong>범례:</strong>
+        <span style="background-color: rgb(255,0,0);"></span> 높은 분포
+        <span style="background-color: rgb(255,165,0);"></span> 중간 분포
+        <span style="background-color: rgb(255,255,0);"></span> 낮은 분포
+      </div>
+    </div>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    const facilityData = {
+      sido: {
+        seoul: 18540,
+        busan: 5449,
+        daegu: 2318,
+        incheon: 4057,
+      },
+    };
+
+    const regions = document.querySelectorAll(".region");
+    const tooltip = document.getElementById("tooltip");
+    const levelSelector = document.getElementById("level-selector");
+
+    function getFillColor(value) {
+      const max = 18540, min = 2318;
+      const ratio = (value - min) / (max - min);
+      const red = Math.floor(255 * ratio);
+      const green = Math.floor(255 * (1 - ratio));
+      return `rgb(${red},${green},0)`;
+    }
+
+    function updateMap(level) {
+      const data = facilityData[level];
+      regions.forEach((region) => {
+        const id = region.id;
+        const value = data?.[id];
+        if (value) {
+          region.style.fill = getFillColor(value);
+          region.addEventListener("mouseover", (e) => {
+            tooltip.style.visibility = "visible";
+            tooltip.textContent = `${region.dataset.name}: ${value} 시설`;
+          });
+          region.addEventListener("mousemove", (e) => {
+            tooltip.style.left = `${e.pageX + 10}px`;
+            tooltip.style.top = `${e.pageY + 10}px`;
+          });
+          region.addEventListener("mouseout", () => {
+            tooltip.style.visibility = "hidden";
+          });
+        }
+      });
+    }
+
+    levelSelector.addEventListener("change", (e) => {
+      updateMap(e.target.value);
+    });
+
+    updateMap("sido");
+  </script>
+</body>
+</html>
